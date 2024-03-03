@@ -3,7 +3,7 @@ import { ChangeEvent, FormEvent, useState } from 'react';
 import { useNavigate, NavigateOptions } from 'react-router-dom';
 
 import Heading from 'components/Form/Heading';
-import Input from 'components/Form/Input'
+import Input from 'components/Form/Input';
 import Button from 'components/Form/Button';
 import { StyledCard } from 'components/Form/Card';
 import Footer from 'components/misc/Footer';
@@ -14,34 +14,132 @@ import colors from 'styles/colors';
 import { determineAddressType } from 'utils/address-type-checker';
 
 const HomeContainer = styled.section`
-  // Keep the same styles
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  font-family: 'PTMono';
+  padding: 0 1rem;
+  footer {
+    z-index: 1;
+  }
 `;
 
 const UserInputMain = styled.form`
-  // Keep the same styles
+  background: ${colors.backgroundLighter};
+  box-shadow: 4px 4px 0px ${colors.bgShadowColor};
+  border-radius: 8px;
+  padding: 1rem;
+  z-index: 5;
+  margin: 1rem;
+  width: calc(100% - 2rem);
+  max-width: 50rem;
+  z-index: 2;
 `;
 
 const ErrorMessage = styled.p`
-  // Keep the same styles
+  color: ${colors.danger};
+  margin: 0.5rem;
 `;
 
 const SiteFeaturesWrapper = styled(StyledCard)`
-  // Keep the same styles
+  margin: 1rem;
+  width: calc(100% - 2rem);
+  max-width: 50rem;
+  z-index: 2;
+  .links {
+    display: flex;
+    justify-content: center;
+    gap: 0.5rem;
+    a {
+      width: 100%;
+      button {
+        width: calc(100% - 2rem);
+      }
+    }
+    @media(max-width: 600px) {
+      flex-wrap: wrap;
+    }
+  }
+  ul {
+    -webkit-column-width: 150px;
+    -moz-column-width: 150px;
+    column-width: 150px;
+    list-style: none;
+    padding: 0 1rem;
+    font-size: 0.9rem;
+    li {
+      margin: 0.1rem 0;
+      text-indent: -1.2rem;
+      break-inside: avoid-column;
+    }
+    li:before {
+      content: '✓';
+      color: ${colors.primary};
+      margin-right: 0.5rem;
+    }
+  }
+  a {
+    color: ${colors.primary};
+  }
 `;
 
 const Home = (): JSX.Element => {
-  // Keep the same states and functions
+  const defaultPlaceholder = 'e.g. https://duck.com/';
+  const [userInput, setUserInput] = useState('');
+  const [errorMsg, setErrMsg] = useState('');
+  const [placeholder, setPlaceholder] = useState(defaultPlaceholder);
+  const [inputDisabled, setInputDisabled] = useState(false);
+  const navigate = useNavigate();
+
+  const submit = () => {
+    let address = userInput.endsWith("/") ? userInput.slice(0, -1) : userInput;
+    const addressType = determineAddressType(address);
+
+    if (addressType === 'empt') {
+      setErrMsg('Field must not be empty');
+    } else if (addressType === 'err') {
+      setErrMsg('Must be a valid URL, IPv4 or IPv6 Address');
+    } else {
+      if (addressType === 'url' && !/^https?:\/\//i.test(address)) {
+        address = 'https://' + address;
+      }
+      const resultRouteParams: NavigateOptions = { state: { address, addressType } };
+      navigate(`/results/${encodeURIComponent(address)}`, resultRouteParams);
+    }
+  };
+
+  const inputChange = (event: ChangeEvent<HTMLInputElement>) => {
+    setUserInput(event.target.value);
+    const isError = ['err', 'empt'].includes(determineAddressType(event.target.value));
+    if (!isError) setErrMsg('');
+  };
+
+  const formSubmitEvent = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    submit();
+  }
 
   return (
     <HomeContainer>
       <FancyBackground />
       <UserInputMain onSubmit={formSubmitEvent}>
         <Heading as="h1" size="xLarge" align="center" color={colors.primary}>
-          {/* Replace the img source and alt text */}
           <img width="64" src="/new-icon.png" alt="New Icon" />
           Web Check
         </Heading>
-        {/* Keep the same Input and ErrorMessage components */}
+        <Input
+          id="user-input"
+          value={userInput}
+          label="Enter a URL"
+          size="large"
+          orientation="vertical"
+          placeholder={placeholder}
+          disabled={inputDisabled}
+          handleChange={inputChange}
+        />
+        {errorMsg && <ErrorMessage>{errorMsg}</ErrorMessage>}
         <Button styles="width: calc(100% - 1rem);" size="large" onClick={submit}>Analyze!</Button>
       </UserInputMain>
       <SiteFeaturesWrapper>
@@ -49,10 +147,8 @@ const Home = (): JSX.Element => {
           <Heading as="h2" size="small" color={colors.primary}>Supported Checks</Heading>
           <ul>
             {docs.map((doc, index) => (<li key={index}>{doc.title}</li>))}
-            {/* Remove the GitHub link */}
           </ul>
         </div>
-        {/* Remove the links div */}
       </SiteFeaturesWrapper>
       <Footer isFixed={true} />
     </HomeContainer>
